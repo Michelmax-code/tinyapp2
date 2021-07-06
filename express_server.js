@@ -8,7 +8,7 @@ app.set("view engine", "ejs");
 
 
 const generateRandomString = () => {
-  let random = Math.random().toString(36).substring(7);
+  let random = Math.random().toString(36).substring(2,8);
   return random;
 };
 
@@ -43,8 +43,16 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.post("/urls", (req, res) => {
-  console.log(req.body);
-  res.send("Ok");
+  let longURL = req.body.longURL;
+  let shortURL = generateRandomString();
+  let validation = 'http://';
+  if (longURL.includes(validation)) {
+    urlDatabase[shortURL] = longURL;
+  } else {
+    urlDatabase[shortURL] = `${validation}${longURL}`;
+  }
+  //console.log(urlDatabase);
+  res.redirect(`/urls/${shortURL}`);
 });
 
 app.get("/urls/:shortURL", (req, res) => {
@@ -52,4 +60,12 @@ app.get("/urls/:shortURL", (req, res) => {
   const templateVars = { shortURL: temp, longURL: urlDatabase[temp] };
   res.render("urls_show", templateVars);
 });
+
+app.get("/u/:shortURL", (req, res) => {
+  const shortURL = req.params.shortURL;
+  const longURL = urlDatabase[shortURL];
+  //console.log('TEST', longURL);
+  res.redirect(longURL);
+});
+
 
