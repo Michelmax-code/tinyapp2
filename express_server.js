@@ -18,6 +18,27 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
+const users = {
+  "123456": {
+    id: "123456",
+    email: "majs@gmail.com",
+    password: "111"
+  },
+  "987654": {
+    id: "987654",
+    email: "papg@gmail.com",
+    password: "222"
+  }
+};
+// Find user email in users object
+const findUserByEmail = (email, users) => {
+  for (let user of Object.keys(users)) {
+    if (users[user].email === email) {
+      return users[user];
+    }
+  }
+};
+
 app.get("/", (req, res) => {
   res.send("Hello!");
 });
@@ -35,12 +56,12 @@ app.get("/hello", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlDatabase, username: req.cookies["username"]};
+  const templateVars = { urls: urlDatabase, username: users[req.cookies["user_id"]]};
   res.render("urls_index", templateVars);
 });
 
 app.get("/urls/new", (req, res) => {
-  let templateVars = { username: req.cookies["username"]};
+  let templateVars = { username: users[req.cookies["user_id"]]};
   res.render("urls_new", templateVars);
 });
 
@@ -59,7 +80,7 @@ app.post("/urls", (req, res) => {
 
 app.get("/urls/:shortURL", (req, res) => {
   let temp = req.params.shortURL;
-  const templateVars = { shortURL: temp, longURL: urlDatabase[temp], username: req.cookies["username"]};
+  const templateVars = { shortURL: temp, longURL: urlDatabase[temp], username: users[req.cookies["user_id"]]};
   res.render("urls_show", templateVars);
 });
 
@@ -89,4 +110,31 @@ app.post("/login", (req, res) => {
 app.post("/logout", (req, res) => {
   res.clearCookie("username");
   res.redirect("/urls");
+});
+// Get register
+app.get("/register", (req, res) => {
+  const templateVars = { username: req.cookies['username']};
+  res.render('urls_register', templateVars);
+});
+// Register new users
+app.post("/register", (req, res) => {
+  const email = req.body.email;
+  const password = req.body.password;
+  if (email === '' || password === '') {
+    res.send('400: Bad Request', 400);
+  }
+  if (findUserByEmail(req.body.email, users)) {
+    res.send('400: Bad Request', 400);
+  } else {
+    const userId = generateRandomString();
+    users[userId] = {
+      id: userId,
+      email,
+      password
+    };
+    res.cookie('email', email);
+    res.cookie('user_id', userId);
+    console.log(users);
+    res.redirect("/urls");
+  }
 });
