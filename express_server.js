@@ -37,6 +37,7 @@ const findUserByEmail = (email, users) => {
       return users[user];
     }
   }
+  return false;
 };
 
 app.get("/", (req, res) => {
@@ -104,8 +105,13 @@ app.post("/urls/:id", (req, res) => {
 });
 // User login
 app.post("/login", (req, res) => {
-  res.cookie('username', req.body.username);
-  res.redirect('/urls');
+  let user = findUserByEmail(req.body.email, users);
+  if (user && user.password === req.body.password) {
+    res.cookie('user_id', user.id);
+    res.redirect('/urls');
+  } else {
+    res.send('403: Forbidden Error', 403);
+  }
 });
 // Get register
 app.get("/register", (req, res) => {
@@ -117,9 +123,9 @@ app.post("/register", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
   if (email === '' || password === '') {
-    res.send('400: Bad Request', 400);
+    res.send('Error: You need an Email and Password to Register', 400);
   }
-  if (findUserByEmail(req.body.email, users)) {
+  if (findUserByEmail(email, users)) {
     res.send('400: Bad Request', 400);
   } else {
     const userId = generateRandomString();
