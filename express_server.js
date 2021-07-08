@@ -14,8 +14,18 @@ const generateRandomString = () => {
 };
 
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  "b2xVn2": {
+    longURL: "http://www.lighthouselabs.ca",
+    userId: "123456" },
+  "b3xBn3": {
+    longURL: "http://www.cnn.com",
+    userId: "123456" },
+  "9sm5xK": {
+    longURL: "http://www.google.com",
+    userId: "987654" },
+  "7sm3xK": {
+    longURL: "http://www.nbc.com",
+    userId: "987654" }
 };
 
 const users = {
@@ -55,42 +65,70 @@ app.get("/urls.json", (req, res) => {
 app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
 });
-
+//Show  URLs page with the list
 app.get("/urls", (req, res) => {
   const templateVars = { urls: urlDatabase, username: users[req.cookies["user_id"]]};
-  console.log("test logout", req.cookies);
+  //console.log("test logout", req.cookies);
   res.render("urls_index", templateVars);
 });
 
 app.get("/urls/new", (req, res) => {
-  let templateVars = { username: users[req.cookies["user_id"]]};
+  const userLogged = users[req.cookies["user_id"]];
+  //console.log(userLogged);
+  if (!userLogged) {
+    res.redirect('/login');
+    return;
+  }
+  const templateVars = { username: users[req.cookies["user_id"]]};
   res.render("urls_new", templateVars);
 });
-
+//list the URLs
 app.post("/urls", (req, res) => {
   let longURL = req.body.longURL;
   let shortURL = generateRandomString();
   let validation = 'http://';
   if (longURL.includes(validation)) {
-    urlDatabase[shortURL] = longURL;
+    urlDatabase[shortURL] = {
+      longURL,
+      userId: users[req.cookies["user_id"]].id
+    };
   } else {
-    urlDatabase[shortURL] = `${validation}${longURL}`;
+    urlDatabase[shortURL] = {
+      longURL: `${validation}${longURL}`,
+      userId: users[req.cookies["user_id"]].id
+    };
   }
-  //console.log(urlDatabase);
+  console.log("TEST DATABASE", urlDatabase);
   res.redirect(`/urls/${shortURL}`);
+
 });
 
 app.get("/urls/:shortURL", (req, res) => {
+  const userLogged = users[req.cookies["user_id"]];
+  //console.log(userLogged);
+  if (!userLogged) {
+    res.redirect('/login');
+    return;
+  }
   let temp = req.params.shortURL;
-  const templateVars = { shortURL: temp, longURL: urlDatabase[temp], username: users[req.cookies["user_id"]]};
+  const templateVars = { shortURL: temp, longURL: urlDatabase[temp]["longURL"], username: users[req.cookies["user_id"]]};
+  //console.log("test temp: ", temp);
   res.render("urls_show", templateVars);
 });
 
 app.get("/u/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
-  const longURL = urlDatabase[shortURL];
-  //console.log('TEST', longURL);
-  res.redirect(longURL);
+  //console.log("TEST SHORTURL", shortURL);
+  const longURLObj = urlDatabase[shortURL];
+  if (longURLObj) {
+    res.redirect(longURLObj.longURL);
+  } else {
+    res.send('Error: The URL is not registered! go back and try another one.');
+  }
+  //console.log('PARAMS', req.params);
+  //console.log("test long url", longURL);
+  //console.log("test datbase", urlDatabase);
+  //res.redirect(longURL);
 });
 //  Delete the url
 app.post("/urls/:shortURL/delete", (req, res) => {
@@ -100,7 +138,9 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 // Edit the url
 app.post("/urls/:id", (req, res) => {
   const shortURL = req.params.id;
-  urlDatabase[shortURL] = req.body.longURL;
+  urlDatabase[shortURL] = {
+    longURL: req.body.longURL,
+    userId: users[req.cookies["user_id"]]};
   res.redirect(`/urls/${shortURL}`);
 });
 // User login
@@ -120,8 +160,9 @@ app.get("/register", (req, res) => {
 });
 // Register new users
 app.post("/register", (req, res) => {
-  const email = req.body.email;
-  const password = req.body.password;
+  const {email, password} = req.body;
+  // const email = req.body.email;
+  // const password = req.body.password;
   if (email === '' || password === '') {
     res.send('Error: You need an Email and Password to Register', 400);
   }
@@ -135,7 +176,7 @@ app.post("/register", (req, res) => {
       password
     };
     res.cookie('user_id', userId);
-    console.log(users);
+    //console.log(users);
     res.redirect("/urls");
   }
 });
