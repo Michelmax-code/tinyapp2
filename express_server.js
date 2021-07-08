@@ -49,6 +49,18 @@ const findUserByEmail = (email, users) => {
   }
   return false;
 };
+// Function to return URL by user
+const urlsForUser = (id, urlDatabase) => {
+  let currentUser = id;
+  let userUrls = {};
+  for (let key in urlDatabase) {
+    if (urlDatabase[key].userId === currentUser) {
+      userUrls[key] = urlDatabase[key];
+    }
+  }
+  return userUrls;
+};
+
 
 app.get("/", (req, res) => {
   res.send("Hello!");
@@ -67,7 +79,13 @@ app.get("/hello", (req, res) => {
 });
 //Show  URLs page with the list
 app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlDatabase, username: users[req.cookies["user_id"]]};
+  const userLooged = users[req.cookies["user_id"]];
+  if (!userLooged) {
+    res.status(400).send("Error: First, <a href='/register'> register </a> or <a href='/login'> login </a>, thanks!!");
+    return;
+  }
+  const urls = urlsForUser(req.cookies["user_id"], urlDatabase);
+  const templateVars = { username: users[req.cookies["user_id"]], urls};
   //console.log("test logout", req.cookies);
   res.render("urls_index", templateVars);
 });
@@ -98,7 +116,7 @@ app.post("/urls", (req, res) => {
       userId: users[req.cookies["user_id"]].id
     };
   }
-  console.log("TEST DATABASE", urlDatabase);
+  //console.log("TEST DATABASE", urlDatabase);
   res.redirect(`/urls/${shortURL}`);
 
 });
@@ -132,6 +150,13 @@ app.get("/u/:shortURL", (req, res) => {
 });
 //  Delete the url
 app.post("/urls/:shortURL/delete", (req, res) => {
+  const userLogged = [req.cookies["user_id"]];
+  let urlDel = req.params.shortURL;
+  if (!userLogged) {
+    return res.redirect('/login');
+  } else if (urlDatabase[urlDel].userId !== userLogged) {
+    res.send("This is not belong to you");
+  }
   delete urlDatabase[req.params.shortURL];
   res.redirect("/urls");
 });
@@ -163,11 +188,13 @@ app.post("/register", (req, res) => {
   const {email, password} = req.body;
   // const email = req.body.email;
   // const password = req.body.password;
-  if (email === '' || password === '') {
-    res.send('Error: You need an Email and Password to Register', 400);
+  if (!email || !password) {
+    res.status(400).send("Error: You need an Email and Password to Register. Please <a href='/register'> try again</a>");
+    return;
   }
   if (findUserByEmail(email, users)) {
-    res.send('400: Bad Request', 400);
+    res.status(400).send("Error: Email already exists. Please <a href='/register'> try again</a>");
+    return;
   } else {
     const userId = generateRandomString();
     users[userId] = {
@@ -183,10 +210,10 @@ app.post("/register", (req, res) => {
 // User logout
 app.post("/logout", (req, res) => {
   res.clearCookie("user_id");
-  res.redirect("/urls");
+  res.redirect("/login");
 });
 // Login user
 app.get("/login", (req, res) => {
-  let templateVars = {username: users[req.cookies['user_id']]};
+  let templateVars = {username: users[req.cookies['user_id']], users};
   res.render('urls_login', templateVars);
 });
