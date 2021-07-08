@@ -57,6 +57,7 @@ app.get("/hello", (req, res) => {
 
 app.get("/urls", (req, res) => {
   const templateVars = { urls: urlDatabase, username: users[req.cookies["user_id"]]};
+  console.log("test logout", req.cookies);
   res.render("urls_index", templateVars);
 });
 
@@ -106,11 +107,6 @@ app.post("/login", (req, res) => {
   res.cookie('username', req.body.username);
   res.redirect('/urls');
 });
-// User logout
-app.post("/logout", (req, res) => {
-  res.clearCookie("username");
-  res.redirect("/urls");
-});
 // Get register
 app.get("/register", (req, res) => {
   const templateVars = { username: req.cookies['username']};
@@ -132,9 +128,18 @@ app.post("/register", (req, res) => {
       email,
       password
     };
-    res.cookie('email', email);
     res.cookie('user_id', userId);
     console.log(users);
     res.redirect("/urls");
   }
+});
+// User logout
+app.post("/logout", (req, res) => {
+  res.clearCookie("user_id");
+  res.redirect("/urls");
+});
+// Login user
+app.get("/login", (req, res) => {
+  let templateVars = {username: users[req.cookies['user_id']]};
+  res.render('urls_login', templateVars);
 });
