@@ -3,6 +3,8 @@ const app = express();
 const PORT = 8080; // default port 8080
 const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
+const bcrypt = require('bcrypt');
+const saltRounds = 10;
 
 app.use(bodyParser.urlencoded({extended: true}));
 app.set("view engine", "ejs");
@@ -32,13 +34,25 @@ const users = {
   "123456": {
     id: "123456",
     email: "majs@gmail.com",
-    password: "111"
+    password: bcrypt.hashSync("111", saltRounds)
   },
   "987654": {
     id: "987654",
     email: "papg@gmail.com",
-    password: "222"
+    password: bcrypt.hashSync("222", saltRounds)
   }
+};
+//Create a new User
+const addNewUser = (email, textPassword) => {
+  const userId = generateRandomString();
+  const password = bcrypt.hashSync(textPassword, saltRounds);
+  const newUserObj = {
+    id: userId,
+    email,
+    password
+  };
+  users[userId] = newUserObj;
+  return userId;
 };
 // Find user email in users object
 const findUserByEmail = (email, users) => {
@@ -171,21 +185,22 @@ app.post("/urls/:id", (req, res) => {
 // User login
 app.post("/login", (req, res) => {
   let user = findUserByEmail(req.body.email, users);
-  if (user && user.password === req.body.password) {
+  if (user && bcrypt.compareSync(req.body.password, user.password)) {
     res.cookie('user_id', user.id);
     res.redirect('/urls');
   } else {
-    res.send('403: Forbidden Error', 403);
+    res.status(403).send('Forbidden Error: You are not registered or You are using the wrong combination');
   }
 });
 // Get register
 app.get("/register", (req, res) => {
-  const templateVars = { username: req.cookies['username']};
+  const templateVars = { username: users[req.cookies['username']]};
   res.render('urls_register', templateVars);
 });
 // Register new users
 app.post("/register", (req, res) => {
   const {email, password} = req.body;
+  const user = findUserByEmail(email, users);
   // const email = req.body.email;
   // const password = req.body.password;
   if (!email || !password) {
