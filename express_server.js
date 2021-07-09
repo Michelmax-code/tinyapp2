@@ -5,7 +5,7 @@ const cookieSession = require("cookie-session");
 const bodyParser = require("body-parser");
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
-
+const { findUserByEmail } = require('./helpers.js');
 app.use(bodyParser.urlencoded({extended: true}));
 app.set("view engine", "ejs");
 app.use(cookieSession({
@@ -45,6 +45,7 @@ const users = {
     password: bcrypt.hashSync("222", saltRounds)
   }
 };
+
 //Create a new User
 const addNewUser = (email, textPassword) => {
   const userId = generateRandomString();
@@ -57,15 +58,7 @@ const addNewUser = (email, textPassword) => {
   users[userId] = newUserObj;
   return userId;
 };
-// Find user email in users object
-const findUserByEmail = (email, users) => {
-  for (let user of Object.keys(users)) {
-    if (users[user].email === email) {
-      return users[user];
-    }
-  }
-  return false;
-};
+
 // Function to return URL by user
 const urlsForUser = (id, urlDatabase) => {
   let currentUser = id;
@@ -78,9 +71,9 @@ const urlsForUser = (id, urlDatabase) => {
   return userUrls;
 };
 
-
+//redirect main site to login page
 app.get("/", (req, res) => {
-  res.send("Hello!");
+  res.redirect("/login");
 });
 
 app.listen(PORT, () => {
@@ -91,9 +84,23 @@ app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 
-app.get("/hello", (req, res) => {
-  res.send("<html><body>Hello <b>World</b></body></html>\n");
+// Login user
+app.get("/login", (req, res) => {
+  let templateVars = {username: users[req.session['user_id']], users};
+  res.render('urls_login', templateVars);
 });
+
+// User login
+app.post("/login", (req, res) => {
+  let user = findUserByEmail(req.body.email, users);
+  if (user && bcrypt.compareSync(req.body.password, user.password)) {
+    req.session['user_id'] = user.id;
+    res.redirect('/urls');
+  } else {
+    res.status(400).send("Error: You are not registered <a href='/register'>(register here!)</a> or You are using the wrong combination <a href='/login'>(try again!)</a>");
+  }
+});
+
 //Show  URLs page with the list
 app.get("/urls", (req, res) => {
   const userLooged = users[req.session["user_id"]];
@@ -103,13 +110,11 @@ app.get("/urls", (req, res) => {
   }
   const urls = urlsForUser(req.session["user_id"], urlDatabase);
   const templateVars = { username: users[req.session["user_id"]], urls};
-  //console.log("test logout", req.session);
   res.render("urls_index", templateVars);
 });
-
+// New URLs
 app.get("/urls/new", (req, res) => {
   const userLogged = users[req.session["user_id"]];
-  //console.log(userLogged);
   if (!userLogged) {
     res.redirect('/login');
     return;
@@ -117,6 +122,7 @@ app.get("/urls/new", (req, res) => {
   const templateVars = { username: users[req.session["user_id"]]};
   res.render("urls_new", templateVars);
 });
+
 //list the URLs
 app.post("/urls", (req, res) => {
   let longURL = req.body.longURL;
@@ -133,37 +139,28 @@ app.post("/urls", (req, res) => {
       userId: users[req.session["user_id"]].id
     };
   }
-  //console.log("TEST DATABASE", urlDatabase);
   res.redirect(`/urls/${shortURL}`);
-
 });
-
+// Receive the shortURL
 app.get("/urls/:shortURL", (req, res) => {
   const userLogged = users[req.session["user_id"]];
-  //console.log(userLogged);
   if (!userLogged) {
     res.redirect('/login');
     return;
   }
   let temp = req.params.shortURL;
   const templateVars = { shortURL: temp, longURL: urlDatabase[temp]["longURL"], username: users[req.session["user_id"]]};
-  //console.log("test temp: ", temp);
   res.render("urls_show", templateVars);
 });
-
+// Link the shortURL to the website
 app.get("/u/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
-  //console.log("TEST SHORTURL", shortURL);
   const longURLObj = urlDatabase[shortURL];
   if (longURLObj) {
     res.redirect(longURLObj.longURL);
   } else {
     res.send('Error: The URL is not registered! go back and try another one.');
   }
-  //console.log('PARAMS', req.params);
-  //console.log("test long url", longURL);
-  //console.log("test datbase", urlDatabase);
-  //res.redirect(longURL);
 });
 //  Delete the url
 app.post("/urls/:shortURL/delete", (req, res) => {
@@ -171,10 +168,8 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   let urlDel = req.params.shortURL;
   if (!userLogged) {
     return res.redirect('/login');
-  } else if (urlDatabase[urlDel].userId !== userLogged) {
-    res.send("This is not belong to you");
   }
-  delete urlDatabase[req.params.shortURL];
+  delete urlDatabase[urlDel];
   res.redirect("/urls");
 });
 // Edit the url
@@ -185,16 +180,6 @@ app.post("/urls/:id", (req, res) => {
     userId: users[req.session["user_id"]]};
   res.redirect(`/urls/${shortURL}`);
 });
-// User login
-app.post("/login", (req, res) => {
-  let user = findUserByEmail(req.body.email, users);
-  if (user && bcrypt.compareSync(req.body.password, user.password)) {
-    req.session['user_id'] = user.id;
-    res.redirect('/urls');
-  } else {
-    res.status(403).send('Forbidden Error: You are not registered or You are using the wrong combination');
-  }
-});
 // Get register
 app.get("/register", (req, res) => {
   const templateVars = { username: users[req.session['username']]};
@@ -204,8 +189,6 @@ app.get("/register", (req, res) => {
 app.post("/register", (req, res) => {
   const {email, password} = req.body;
   const user = findUserByEmail(email, users);
-  // const email = req.body.email;
-  // const password = req.body.password;
   if (!email || !password) {
     res.status(400).send("Error: You need an Email and Password to Register. Please <a href='/register'> try again</a>");
     return;
@@ -224,8 +207,4 @@ app.post("/logout", (req, res) => {
   req.session = null;
   res.redirect("/login");
 });
-// Login user
-app.get("/login", (req, res) => {
-  let templateVars = {username: users[req.session['user_id']], users};
-  res.render('urls_login', templateVars);
-});
+
