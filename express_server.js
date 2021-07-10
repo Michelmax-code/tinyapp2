@@ -56,7 +56,7 @@ const addNewUser = (email, textPassword) => {
   return userId;
 };
 
-//redirect main site to login page
+//redirect main site to urls page
 app.get("/", (req, res) => {
   res.redirect("/urls");
 });
@@ -196,14 +196,16 @@ app.get("/register", (req, res) => {
 app.post("/register", (req, res) => {
   const {email, password} = req.body;
   const user = findUserByEmail(email, users);
+  //1. Verify if the forms are complete
   if (!email || !password) {
     res.status(400).send("Error: You need an Email and Password to Register. Please <a href='/register'> try again</a>");
     return;
   }
+  //2. Verify if the user already exists
   if (user) {
     res.status(400).send("Error: Email already exists. Please <a href='/register'> try again</a>");
     return;
-  } else {
+  } else { //3. Create the new user
     const userId = addNewUser(email, password);
     req.session['user_id'] = userId;
     res.redirect("/urls");
