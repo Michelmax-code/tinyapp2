@@ -5,7 +5,7 @@ const cookieSession = require("cookie-session");
 const bodyParser = require("body-parser");
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
-const { findUserByEmail } = require('./helpers.js');
+const { findUserByEmail,  } = require('./helpers.js');
 app.use(bodyParser.urlencoded({extended: true}));
 app.set("view engine", "ejs");
 app.use(cookieSession({
@@ -13,11 +13,7 @@ app.use(cookieSession({
   keys: ['key1', 'key2']
 }));
 
-const generateRandomString = () => {
-  let random = Math.random().toString(36).substring(2,8);
-  return random;
-};
-
+// URLs Database:
 const urlDatabase = {
   "b2xVn2": {
     longURL: "http://www.lighthouselabs.ca",
@@ -33,6 +29,7 @@ const urlDatabase = {
     userId: "987654" }
 };
 
+// Users Database:
 const users = {
   "123456": {
     id: "123456",
@@ -44,6 +41,12 @@ const users = {
     email: "papg@gmail.com",
     password: bcrypt.hashSync("222", saltRounds)
   }
+};
+
+// Function to generate random string of six alphanumeric value
+const generateRandomString = () => {
+  let random = Math.random().toString(36).substring(2,8);
+  return random;
 };
 
 //Create a new User
@@ -59,7 +62,7 @@ const addNewUser = (email, textPassword) => {
   return userId;
 };
 
-// Function to return URL by user
+// Function to return URLs by user
 const urlsForUser = (id, urlDatabase) => {
   let currentUser = id;
   let userUrls = {};
