@@ -45,7 +45,7 @@ const users = {
 
 // Function to generate random string of six alphanumeric value
 const generateRandomString = () => {
-  let random = Math.random().toString(36).substring(2,8);
+  const random = Math.random().toString(36).substring(2,8);
   return random;
 };
 
@@ -64,7 +64,7 @@ const addNewUser = (email, textPassword) => {
 
 // Function to return URLs by user
 const urlsForUser = (id, urlDatabase) => {
-  let currentUser = id;
+  const currentUser = id;
   let userUrls = {};
   for (let key in urlDatabase) {
     if (urlDatabase[key].userId === currentUser) {
@@ -89,13 +89,13 @@ app.get("/urls.json", (req, res) => {
 
 // Login user
 app.get("/login", (req, res) => {
-  let templateVars = {username: users[req.session['user_id']], users};
+  const templateVars = {username: users[req.session['user_id']], users};
   res.render('urls_login', templateVars);
 });
 
 // User login
 app.post("/login", (req, res) => {
-  let user = findUserByEmail(req.body.email, users);
+  const user = findUserByEmail(req.body.email, users);
   if (user && bcrypt.compareSync(req.body.password, user.password)) {
     req.session['user_id'] = user.id;
     res.redirect('/urls');
@@ -104,10 +104,10 @@ app.post("/login", (req, res) => {
   }
 });
 
-//Show  URLs page with the list
+//Show URLs page with the list
 app.get("/urls", (req, res) => {
-  const userLooged = users[req.session["user_id"]];
-  if (!userLooged) {
+  const userLogged = users[req.session["user_id"]];
+  if (!userLogged) { //if the user is not logged
     res.status(400).send("Error: First, <a href='/register'> register </a> or <a href='/login'> login </a>, thanks!!");
     return;
   }
@@ -128,9 +128,9 @@ app.get("/urls/new", (req, res) => {
 
 //list the URLs
 app.post("/urls", (req, res) => {
-  let longURL = req.body.longURL;
-  let shortURL = generateRandomString();
-  let validation = 'http://';
+  const longURL = req.body.longURL;
+  const shortURL = generateRandomString();
+  const validation = 'http://';
   if (longURL.includes(validation)) {
     urlDatabase[shortURL] = {
       longURL,
@@ -147,11 +147,14 @@ app.post("/urls", (req, res) => {
 // Receive the shortURL
 app.get("/urls/:shortURL", (req, res) => {
   const userLogged = users[req.session["user_id"]];
-  if (!userLogged) {
-    res.redirect('/login');
+  const temp = req.params.shortURL;
+  if (!urlDatabase[temp]) {
+    res.status(400).send('Error: This URL is not registered! Try with another one!');
+  }
+  if (!userLogged || userLogged !== urlDatabase[temp].userId) {
+    res.status(400).send('Error: This URL is not belong to you or you are not logged. Try again!');
     return;
   }
-  let temp = req.params.shortURL;
   const templateVars = { shortURL: temp, longURL: urlDatabase[temp]["longURL"], username: users[req.session["user_id"]]};
   res.render("urls_show", templateVars);
 });
@@ -168,7 +171,7 @@ app.get("/u/:shortURL", (req, res) => {
 //  Delete the url
 app.post("/urls/:shortURL/delete", (req, res) => {
   const userLogged = [req.session["user_id"]];
-  let urlDel = req.params.shortURL;
+  const urlDel = req.params.shortURL;
   if (!userLogged) {
     return res.redirect('/login');
   }
