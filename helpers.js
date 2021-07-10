@@ -14,4 +14,16 @@ const generateRandomString = () => {
   return random;
 };
 
-module.exports = { findUserByEmail, generateRandomString };
+// Function to return URLs by user
+const urlsForUser = (id, urlDatabase) => {
+  const currentUser = id;
+  let userUrls = {};
+  for (let key in urlDatabase) {
+    if (urlDatabase[key].userId === currentUser) {
+      userUrls[key] = urlDatabase[key];
+    }
+  }
+  return userUrls;
+};
+
+module.exports = { findUserByEmail, generateRandomString,urlsForUser };
