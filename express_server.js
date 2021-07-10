@@ -5,7 +5,7 @@ const cookieSession = require("cookie-session");
 const bodyParser = require("body-parser");
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
-const { findUserByEmail,  } = require('./helpers.js');
+const { findUserByEmail, generateRandomString, urlsForUser } = require('./helpers.js');
 app.use(bodyParser.urlencoded({extended: true}));
 app.set("view engine", "ejs");
 app.use(cookieSession({
@@ -43,12 +43,6 @@ const users = {
   }
 };
 
-// Function to generate random string of six alphanumeric value
-const generateRandomString = () => {
-  const random = Math.random().toString(36).substring(2,8);
-  return random;
-};
-
 //Create a new User
 const addNewUser = (email, textPassword) => {
   const userId = generateRandomString();
@@ -62,29 +56,9 @@ const addNewUser = (email, textPassword) => {
   return userId;
 };
 
-// Function to return URLs by user
-const urlsForUser = (id, urlDatabase) => {
-  const currentUser = id;
-  let userUrls = {};
-  for (let key in urlDatabase) {
-    if (urlDatabase[key].userId === currentUser) {
-      userUrls[key] = urlDatabase[key];
-    }
-  }
-  return userUrls;
-};
-
 //redirect main site to login page
 app.get("/", (req, res) => {
   res.redirect("/urls");
-});
-
-app.listen(PORT, () => {
-  console.log(`Example app listening on port ${PORT}!`);
-});
-
-app.get("/urls.json", (req, res) => {
-  res.json(urlDatabase);
 });
 
 // Login user
@@ -94,7 +68,6 @@ app.get("/login", (req, res) => {
   if (userLogged) {
     res.redirect("/urls");
   } else {
-    console.log("TEST", templateVars);
     res.render('urls_login', templateVars);
   }
 });
@@ -121,16 +94,6 @@ app.get("/urls", (req, res) => {
   const templateVars = { username: users[req.session["user_id"]], urls};
   res.render("urls_index", templateVars);
 });
-// New URLs
-app.get("/urls/new", (req, res) => {
-  const userLogged = users[req.session["user_id"]];
-  if (!userLogged) {
-    res.redirect('/login');
-    return;
-  }
-  const templateVars = { username: users[req.session["user_id"]]};
-  res.render("urls_new", templateVars);
-});
 
 //list the URLs
 app.post("/urls", (req, res) => {
@@ -150,6 +113,18 @@ app.post("/urls", (req, res) => {
   }
   res.redirect(`/urls/${shortURL}`);
 });
+
+// New URLs
+app.get("/urls/new", (req, res) => {
+  const userLogged = users[req.session["user_id"]];
+  if (!userLogged) {
+    res.redirect('/login');
+    return;
+  }
+  const templateVars = { username: users[req.session["user_id"]]};
+  res.render("urls_new", templateVars);
+});
+
 // Receive the shortURL
 app.get("/urls/:shortURL", (req, res) => {
   const userLogged = users[req.session["user_id"]];
@@ -172,6 +147,7 @@ app.get("/urls/:shortURL", (req, res) => {
     }
   }
 });
+
 // Link the shortURL to the website
 app.get("/u/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
@@ -182,6 +158,7 @@ app.get("/u/:shortURL", (req, res) => {
     res.send('Error: The URL is not registered! go back and try another one.');
   }
 });
+
 //  Delete the url
 app.post("/urls/:shortURL/delete", (req, res) => {
   const userLogged = [req.session["user_id"]];
@@ -196,6 +173,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
     res.redirect("/urls");
   }
 });
+
 // Edit the url
 app.post("/urls/:id", (req, res) => {
   const shortURL = req.params.id;
@@ -203,6 +181,7 @@ app.post("/urls/:id", (req, res) => {
   //userId: users[req.session["user_id"]]};
   res.redirect(`/urls/${shortURL}`);
 });
+
 // Get register
 app.get("/register", (req, res) => {
   const templateVars = { username: users[req.session['username']]};
@@ -212,6 +191,7 @@ app.get("/register", (req, res) => {
   }
   res.render('urls_register', templateVars);
 });
+
 // Register new users
 app.post("/register", (req, res) => {
   const {email, password} = req.body;
@@ -229,9 +209,15 @@ app.post("/register", (req, res) => {
     res.redirect("/urls");
   }
 });
+
 // User logout
 app.post("/logout", (req, res) => {
   req.session = null;
   res.status(400).send("Error: You are not registered <a href='/register'>(register here!)</a> or You are not logged <a href='/login'>(try again!)</a>");
+});
+
+// Listen initialized
+app.listen(PORT, () => {
+  console.log(`Example app listening on port ${PORT}!`);
 });
 
