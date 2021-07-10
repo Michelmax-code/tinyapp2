@@ -158,14 +158,14 @@ app.get("/urls/:shortURL", (req, res) => {
     res.status(400).send('Error: You are not logged. Try again!');
   } else {
     //3. if the user is logged in and then urls does not belong to the user!
-    if (!urlDatabase[temp].userId) {
-      res.status(400).send('Error: This URL is not belong to you or you are not logged. Try again!');
+    if (urlDatabase[temp].userId !== req.session.user_id) {
+      res.status(400).send('Error: This URL is not belong to you. Try again!');
     } else { //url belongs to the particular users
       const templateVars = { shortURL: temp, longURL: urlDatabase[temp]["longURL"], username: users[req.session["user_id"]]};
+      console.log("TESST", templateVars);
       res.render("urls_show", templateVars);
     }
   }
-  
 });
 // Link the shortURL to the website
 app.get("/u/:shortURL", (req, res) => {
