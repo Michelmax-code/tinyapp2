@@ -90,8 +90,13 @@ app.get("/urls.json", (req, res) => {
 // Login user
 app.get("/login", (req, res) => {
   const templateVars = {username: users[req.session['user_id']], users};
-  console.log("TEST", templateVars);
-  res.render('urls_login', templateVars);
+  const userLogged = users[req.session["user_id"]];
+  if (userLogged) {
+    res.redirect("/urls");
+  } else {
+    console.log("TEST", templateVars);
+    res.render('urls_login', templateVars);
+  }
 });
 
 // User login
@@ -201,6 +206,10 @@ app.post("/urls/:id", (req, res) => {
 // Get register
 app.get("/register", (req, res) => {
   const templateVars = { username: users[req.session['username']]};
+  const userLogged = users[req.session["user_id"]];
+  if (userLogged) {
+    res.redirect("/urls");
+  }
   res.render('urls_register', templateVars);
 });
 // Register new users
