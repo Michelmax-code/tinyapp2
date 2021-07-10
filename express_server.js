@@ -182,10 +182,14 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   const userLogged = [req.session["user_id"]];
   const urlDel = req.params.shortURL;
   if (!userLogged) {
-    return res.redirect('/login');
+    return res.status(400).send("Error: First, <a href='/register'> register </a> or <a href='/login'> login </a>, thanks!!");
   }
-  delete urlDatabase[urlDel];
-  res.redirect("/urls");
+  if (urlDatabase[req.params.shortURL].userId !== req.session.user_id) {
+    res.status(400).send('Error: This URL is not belong to you. Try again!');
+  } else {
+    delete urlDatabase[urlDel];
+    res.redirect("/urls");
+  }
 });
 // Edit the url
 app.post("/urls/:id", (req, res) => {
