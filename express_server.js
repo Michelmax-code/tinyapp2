@@ -76,7 +76,7 @@ const urlsForUser = (id, urlDatabase) => {
 
 //redirect main site to login page
 app.get("/", (req, res) => {
-  res.redirect("/login");
+  res.redirect("/urls");
 });
 
 app.listen(PORT, () => {
