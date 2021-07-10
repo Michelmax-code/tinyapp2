@@ -90,6 +90,7 @@ app.get("/urls.json", (req, res) => {
 // Login user
 app.get("/login", (req, res) => {
   const templateVars = {username: users[req.session['user_id']], users};
+  console.log("TEST", templateVars);
   res.render('urls_login', templateVars);
 });
 
@@ -148,15 +149,23 @@ app.post("/urls", (req, res) => {
 app.get("/urls/:shortURL", (req, res) => {
   const userLogged = users[req.session["user_id"]];
   const temp = req.params.shortURL;
+  //1. First condition is to check whether the shortURL is existing or not?
   if (!urlDatabase[temp]) {
-    res.status(400).send('Error: This URL is not registered! Try with another one!');
+    res.status(400).send('Error: The shortURL does not exists in the database. Please try with another one!');
   }
-  if (!userLogged || userLogged !== urlDatabase[temp].userId) {
-    res.status(400).send('Error: This URL is not belong to you or you are not logged. Try again!');
-    return;
+  //2. Check for the Condition if user is not logged in
+  if (!userLogged) {
+    res.status(400).send('Error: You are not logged. Try again!');
+  } else {
+    //3. if the user is logged in and then urls does not belong to the user!
+    if (!urlDatabase[temp].userId) {
+      res.status(400).send('Error: This URL is not belong to you or you are not logged. Try again!');
+    } else { //url belongs to the particular users
+      const templateVars = { shortURL: temp, longURL: urlDatabase[temp]["longURL"], username: users[req.session["user_id"]]};
+      res.render("urls_show", templateVars);
+    }
   }
-  const templateVars = { shortURL: temp, longURL: urlDatabase[temp]["longURL"], username: users[req.session["user_id"]]};
-  res.render("urls_show", templateVars);
+  
 });
 // Link the shortURL to the website
 app.get("/u/:shortURL", (req, res) => {
@@ -181,9 +190,8 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 // Edit the url
 app.post("/urls/:id", (req, res) => {
   const shortURL = req.params.id;
-  urlDatabase[shortURL] = {
-    longURL: req.body.longURL,
-    userId: users[req.session["user_id"]]};
+  urlDatabase[shortURL].longURL = req.body.longURL;
+  //userId: users[req.session["user_id"]]};
   res.redirect(`/urls/${shortURL}`);
 });
 // Get register
