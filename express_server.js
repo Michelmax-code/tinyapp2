@@ -208,6 +208,6 @@ app.post("/register", (req, res) => {
 // User logout
 app.post("/logout", (req, res) => {
   req.session = null;
-  res.redirect("/login");
+  res.status(400).send("Error: You are not registered <a href='/register'>(register here!)</a> or You are not logged <a href='/login'>(try again!)</a>");
 });
 
