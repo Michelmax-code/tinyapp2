@@ -132,6 +132,7 @@ app.get("/urls/:shortURL", (req, res) => {
   //1. First condition is to check whether the shortURL is existing or not?
   if (!urlDatabase[temp]) {
     res.status(400).send('Error: The shortURL does not exists in the database. Please try with another one!');
+    return;
   }
   //2. Check for the Condition if user is not logged in
   if (!userLogged) {
