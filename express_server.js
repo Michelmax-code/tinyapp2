@@ -58,7 +58,12 @@ const addNewUser = (email, textPassword) => {
 
 //redirect main site to urls page
 app.get("/", (req, res) => {
-  res.redirect("/urls");
+  const userLogged = users[req.session["user_id"]];
+  if (userLogged) {
+    res.redirect("/urls");
+  } else {
+    res.redirect("/login");
+  }
 });
 
 // Login user
