@@ -179,7 +179,7 @@ app.post("/urls/:id", (req, res) => {
   const shortURL = req.params.id;
   urlDatabase[shortURL].longURL = req.body.longURL;
   //userId: users[req.session["user_id"]]};
-  res.redirect(`/urls/${shortURL}`);
+  res.redirect(`/urls`);
 });
 
 // Get register
