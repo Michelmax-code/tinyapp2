@@ -142,7 +142,6 @@ app.get("/urls/:shortURL", (req, res) => {
       res.status(400).send('Error: This URL is not belong to you. Try again!');
     } else { //url belongs to the particular users
       const templateVars = { shortURL: temp, longURL: urlDatabase[temp]["longURL"], username: users[req.session["user_id"]]};
-      console.log("TESST", templateVars);
       res.render("urls_show", templateVars);
     }
   }
@@ -176,10 +175,17 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 
 // Edit the url
 app.post("/urls/:id", (req, res) => {
+  const userLogged = req.session["user_id"];
   const shortURL = req.params.id;
-  urlDatabase[shortURL].longURL = req.body.longURL;
-  //userId: users[req.session["user_id"]]};
-  res.redirect(`/urls`);
+  if (!userLogged) {
+    return res.status(400).send("Error: First, <a href='/register'> register </a> or <a href='/login'> login </a>, thanks!!");
+  }
+  if (urlDatabase[shortURL].userId !== userLogged) {
+    res.status(400).send('Error: This URL is not belong to you. Try again!');
+  } else {
+    urlDatabase[shortURL].longURL = req.body.longURL;
+    res.redirect("/urls");
+  }
 });
 
 // Get register
