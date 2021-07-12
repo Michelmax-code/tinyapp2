@@ -195,6 +195,7 @@ app.get("/register", (req, res) => {
   const userLogged = users[req.session["user_id"]];
   if (userLogged) {
     res.redirect("/urls");
+    return;
   }
   res.render('urls_register', templateVars);
 });
