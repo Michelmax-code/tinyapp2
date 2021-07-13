@@ -105,18 +105,23 @@ app.post("/urls", (req, res) => {
   const longURL = req.body.longURL;
   const shortURL = generateRandomString();
   const validation = 'http://';
-  if (longURL.includes(validation)) {
-    urlDatabase[shortURL] = {
-      longURL,
-      userId: users[req.session["user_id"]].id
-    };
+  const userLogged = users[req.session["user_id"]];
+  if (userLogged) {
+    if (longURL.includes(validation)) {
+      urlDatabase[shortURL] = {
+        longURL,
+        userId: users[req.session["user_id"]].id
+      };
+    } else {
+      urlDatabase[shortURL] = {
+        longURL: `${validation}${longURL}`,
+        userId: users[req.session["user_id"]].id
+      };
+    }
+    res.redirect(`/urls/${shortURL}`);
   } else {
-    urlDatabase[shortURL] = {
-      longURL: `${validation}${longURL}`,
-      userId: users[req.session["user_id"]].id
-    };
+    res.status(400).send("Error: You are not logged!. Please <a href='/register'> register </a> or <a href='/login'> login </a> to can do changes.");
   }
-  res.redirect(`/urls/${shortURL}`);
 });
 
 // New URLs
