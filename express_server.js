@@ -45,8 +45,8 @@ const users = {
 
 //Create a new User
 const addNewUser = (email, textPassword) => {
-  const userId = generateRandomString();
-  const password = bcrypt.hashSync(textPassword, saltRounds);
+  const userId = generateRandomString(); //Assign random string to the new user like id.
+  const password = bcrypt.hashSync(textPassword, saltRounds); // encrypt password.
   const newUserObj = {
     id: userId,
     email,
@@ -59,7 +59,7 @@ const addNewUser = (email, textPassword) => {
 //redirect main site to urls page
 app.get("/", (req, res) => {
   const userLogged = users[req.session["user_id"]];
-  if (userLogged) {
+  if (userLogged) { // Validate if user is logged
     res.redirect("/urls");
   } else {
     res.redirect("/login");
@@ -70,7 +70,7 @@ app.get("/", (req, res) => {
 app.get("/login", (req, res) => {
   const templateVars = {username: users[req.session['user_id']], users};
   const userLogged = users[req.session["user_id"]];
-  if (userLogged) {
+  if (userLogged) { // Validate if user is logged.
     res.redirect("/urls");
   } else {
     res.render('urls_login', templateVars);
@@ -80,7 +80,7 @@ app.get("/login", (req, res) => {
 // User login
 app.post("/login", (req, res) => {
   const user = findUserByEmail(req.body.email, users);
-  if (user && bcrypt.compareSync(req.body.password, user.password)) {
+  if (user && bcrypt.compareSync(req.body.password, user.password)) { //Validate if the user Input and the usersdatabase match to allow the access
     req.session['user_id'] = user.id;
     res.redirect('/urls');
   } else {
@@ -91,11 +91,11 @@ app.post("/login", (req, res) => {
 //Show URLs page with the list
 app.get("/urls", (req, res) => {
   const userLogged = users[req.session["user_id"]];
-  if (!userLogged) { //if the user is not logged
+  if (!userLogged) { //1. Validation if the user is not logged
     res.status(400).send("Error: First, <a href='/register'> register </a> or <a href='/login'> login </a>, thanks!!");
     return;
   }
-  const urls = urlsForUser(req.session["user_id"], urlDatabase);
+  const urls = urlsForUser(req.session["user_id"], urlDatabase); //2. Show the URLs under the user_id
   const templateVars = { username: users[req.session["user_id"]], urls};
   res.render("urls_index", templateVars);
 });
@@ -106,20 +106,20 @@ app.post("/urls", (req, res) => {
   const shortURL = generateRandomString();
   const validation = 'http://';
   const userLogged = users[req.session["user_id"]];
-  if (userLogged) {
-    if (longURL.includes(validation)) {
+  if (userLogged) { //1. Validation if the user is logged.
+    if (longURL.includes(validation)) { //2. Check if the new URL have the protocol included.
       urlDatabase[shortURL] = {
         longURL,
         userId: users[req.session["user_id"]].id
       };
-    } else {
+    } else { //3. Include the protocol in the new URL
       urlDatabase[shortURL] = {
         longURL: `${validation}${longURL}`,
         userId: users[req.session["user_id"]].id
       };
     }
     res.redirect(`/urls/${shortURL}`);
-  } else {
+  } else { //4. If the user is not logged send the specific error.
     res.status(400).send("Error: You are not logged!. Please <a href='/register'> register </a> or <a href='/login'> login </a> to can do changes.");
   }
 });
@@ -127,7 +127,7 @@ app.post("/urls", (req, res) => {
 // New URLs
 app.get("/urls/new", (req, res) => {
   const userLogged = users[req.session["user_id"]];
-  if (!userLogged) {
+  if (!userLogged) { //1. Validation if the user is logged.
     res.redirect('/login');
     return;
   }
@@ -162,7 +162,7 @@ app.get("/urls/:shortURL", (req, res) => {
 app.get("/u/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
   const longURLObj = urlDatabase[shortURL];
-  if (longURLObj) {
+  if (longURLObj) { //1. Validation if the URL is registered in the database.
     res.redirect(longURLObj.longURL);
   } else {
     res.send('Error: The URL is not registered! go back and try another one.');
@@ -173,12 +173,12 @@ app.get("/u/:shortURL", (req, res) => {
 app.post("/urls/:shortURL/delete", (req, res) => {
   const userLogged = [req.session["user_id"]];
   const urlDel = req.params.shortURL;
-  if (!userLogged) {
+  if (!userLogged) { //1. Validation if the user is logged.
     return res.status(400).send("Error: First, <a href='/register'> register </a> or <a href='/login'> login </a>, thanks!!");
   }
-  if (urlDatabase[req.params.shortURL].userId !== req.session.user_id) {
+  if (urlDatabase[req.params.shortURL].userId !== req.session.user_id) { //2. Validation if the url is belong to the actual User.
     res.status(400).send('Error: This URL is not belong to you. Try again!');
-  } else {
+  } else { //3. Complete the process to Deletethe URL if the two first validations are ok.
     delete urlDatabase[urlDel];
     res.redirect("/urls");
   }
@@ -188,12 +188,12 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 app.post("/urls/:id", (req, res) => {
   const userLogged = req.session["user_id"];
   const shortURL = req.params.id;
-  if (!userLogged) {
+  if (!userLogged) { //1. Validation if the user is logged.
     return res.status(400).send("Error: First, <a href='/register'> register </a> or <a href='/login'> login </a>, thanks!!");
   }
-  if (urlDatabase[shortURL].userId !== userLogged) {
+  if (urlDatabase[shortURL].userId !== userLogged) { //2. Validation if the url is belong to the actual User.
     res.status(400).send('Error: This URL is not belong to you. Try again!');
-  } else {
+  } else { //3. Edit the url requested.
     urlDatabase[shortURL].longURL = req.body.longURL;
     res.redirect("/urls");
   }
@@ -203,7 +203,7 @@ app.post("/urls/:id", (req, res) => {
 app.get("/register", (req, res) => {
   const templateVars = { username: users[req.session['username']]};
   const userLogged = users[req.session["user_id"]];
-  if (userLogged) {
+  if (userLogged) { //1. Validation if the user is logged.
     res.redirect("/urls");
     return;
   }
